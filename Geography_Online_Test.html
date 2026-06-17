@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geography Online Test — Self-Marking</title>
+<style>
+  :root {
+    --blue: #2E75B6; --blue-dark: #1a4d7a; --blue-light: #D6E8F7;
+    --green: #1e7e34; --green-light: #d4edda; --green-bg: #28a745;
+    --red: #c82333; --red-light: #f8d7da;
+    --yellow: #ffc107; --yellow-light: #fff3cd;
+    --gray: #6c757d; --gray-light: #f8f9fa; --gray-border: #dee2e6;
+    --radius: 10px; --shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #333; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header { background: linear-gradient(135deg, var(--blue-dark), var(--blue)); color: #fff; padding: 28px 24px 20px; text-align: center; }
+  header h1 { font-size: 1.8rem; margin-bottom: 6px; }
+  header p { font-size: 0.95rem; color: rgba(255,255,255,0.85); }
+  .meta-chips { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .meta-chip { background: rgba(255,255,255,0.2); border-radius: 999px; padding: 4px 14px; font-size: 0.82rem; font-weight: 600; }
+
+  /* ── TIMER ── */
+  #timer-bar { background: var(--blue-dark); padding: 8px 24px; display: flex; align-items: center; justify-content: space-between; color: #fff; font-size: 0.9rem; position: sticky; top: 0; z-index: 50; }
+  #timer-display { font-weight: 700; font-size: 1rem; font-family: monospace; }
+  #q-counter { color: rgba(255,255,255,0.8); }
+  .prog-outer { background: rgba(255,255,255,0.2); border-radius: 999px; height: 6px; width: 180px; }
+  .prog-inner { height: 6px; border-radius: 999px; background: var(--yellow); transition: width 0.3s; }
+
+  /* ── MAIN ── */
+  main { max-width: 820px; margin: 24px auto; padding: 0 16px 60px; }
+
+  /* ── SECTION HEADER ── */
+  .section-hdr { background: var(--blue); color: #fff; border-radius: var(--radius) var(--radius) 0 0; padding: 10px 20px; font-weight: 700; font-size: 0.95rem; margin-top: 28px; }
+
+  /* ── QUESTION CARD ── */
+  .q-card { background: #fff; border-radius: 0 0 var(--radius) var(--radius); box-shadow: var(--shadow); padding: 20px 22px; margin-bottom: 2px; }
+  .q-card + .q-card { border-top: 1px solid var(--gray-border); border-radius: 0; }
+  .q-card:last-of-type { border-radius: 0 0 var(--radius) var(--radius); margin-bottom: 0; }
+  .q-num { font-size: 0.78rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .q-text { font-size: 1rem; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+
+  /* ── MCQ OPTIONS ── */
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .opt { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 2px solid var(--gray-border); border-radius: 8px; cursor: pointer; transition: all 0.18s; font-size: 0.93rem; background: #fff; }
+  .opt:hover { border-color: var(--blue); background: var(--blue-light); }
+  .opt input[type="radio"] { accent-color: var(--blue); width: 16px; height: 16px; flex-shrink: 0; }
+  .opt.correct-ans { border-color: var(--green-bg); background: var(--green-light); }
+  .opt.wrong-ans { border-color: var(--red); background: var(--red-light); }
+  .opt.show-correct { border-color: var(--green-bg); background: #eafbea; }
+
+  /* ── SHORT ANSWER ── */
+  .short-input { width: 100%; padding: 10px 14px; border: 2px solid var(--gray-border); border-radius: 8px; font-size: 0.93rem; font-family: inherit; resize: vertical; min-height: 56px; }
+  .short-input:focus { outline: none; border-color: var(--blue); }
+  .short-input.correct-ans { border-color: var(--green-bg); background: var(--green-light); }
+  .short-input.wrong-ans { border-color: var(--red); background: var(--red-light); }
+  .sa-model { font-size: 0.82rem; color: var(--green); margin-top: 6px; font-weight: 600; display: none; }
+  .sa-wrong-note { font-size: 0.82rem; color: var(--red); margin-top: 6px; display: none; }
+
+  /* ── TRUE/FALSE ── */
+  .tf-row { display: flex; gap: 10px; }
+  .tf-opt { flex: 1; padding: 10px; border: 2px solid var(--gray-border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.93rem; background: #fff; transition: all 0.18s; }
+  .tf-opt:hover { border-color: var(--blue); background: var(--blue-light); }
+  .tf-opt.selected { border-color: var(--blue); background: var(--blue-light); font-weight: 700; }
+  .tf-opt.correct-ans { border-color: var(--green-bg); background: var(--green-light); font-weight: 700; }
+  .tf-opt.wrong-ans { border-color: var(--red); background: var(--red-light); }
+  .tf-opt.show-correct { border-color: var(--green-bg); background: #eafbea; font-weight: 700; }
+
+  /* ── RESULT ICONS ── */
+  .q-result { font-size: 0.82rem; font-weight: 700; margin-top: 10px; padding: 6px 12px; border-radius: 6px; display: none; }
+  .q-result.ok { background: var(--green-light); color: var(--green); }
+  .q-result.err { background: var(--red-light); color: var(--red); }
+
+  /* ── CONFIRMATION ── */
+  #confirm-box { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-top: 28px; border: 3px solid var(--yellow); }
+  #confirm-box h3 { font-size: 1.1rem; margin-bottom: 10px; color: var(--blue-dark); }
+  .checklist { list-style: none; margin: 10px 0 16px; }
+  .checklist li { padding: 6px 0; font-size: 0.92rem; }
+  .checklist li::before { content: "☐ "; color: var(--blue); font-size: 1.1rem; }
+  #double-check-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; padding: 14px 16px; background: var(--yellow-light); border-radius: 8px; border: 2px solid var(--yellow); font-size: 0.95rem; font-weight: 600; }
+  #double-check { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; accent-color: var(--blue); cursor: pointer; }
+
+  /* ── SUBMIT ── */
+  #submit-btn { display: block; width: 100%; margin-top: 18px; padding: 16px; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; opacity: 0.5; pointer-events: none; letter-spacing: 0.5px; }
+  #submit-btn.ready { opacity: 1; pointer-events: all; }
+  #submit-btn.ready:hover { background: linear-gradient(135deg, var(--blue-dark), #0d2d47); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+  /* ── RESULTS PANEL ── */
+  #results-panel { display: none; max-width: 820px; margin: 24px auto; padding: 0 16px 60px; }
+  .result-banner { border-radius: var(--radius); padding: 28px; text-align: center; margin-bottom: 20px; }
+  .result-banner.high { background: linear-gradient(135deg, #1e7e34, #43e97b); }
+  .result-banner.mid { background: linear-gradient(135deg, var(--blue-dark), var(--blue)); }
+  .result-banner.low { background: linear-gradient(135deg, #922b21, #e74c3c); }
+  .result-banner h2 { font-size: 2rem; color: #fff; margin-bottom: 8px; }
+  .result-banner .pct { font-size: 3.5rem; font-weight: 900; color: #fff; line-height: 1; }
+  .result-banner p { color: rgba(255,255,255,0.9); margin-top: 8px; font-size: 1rem; }
+  .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .breakdown-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; text-align: center; }
+  .breakdown-card .bc-num { font-size: 1.8rem; font-weight: 800; color: var(--blue-dark); }
+  .breakdown-card .bc-label { font-size: 0.8rem; color: var(--gray); margin-top: 4px; }
+  .review-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 10px; border-left: 5px solid var(--red); }
+  .review-card.correct { border-left-color: var(--green-bg); }
+  .review-card .rv-q { font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; }
+  .review-card .rv-your { font-size: 0.88rem; color: var(--red); margin-bottom: 4px; }
+  .review-card .rv-correct { font-size: 0.88rem; color: var(--green); }
+  .retry-btn { display: block; width: 100%; padding: 14px; background: var(--blue); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; text-align: center; transition: background 0.2s; }
+  .retry-btn:hover { background: var(--blue-dark); }
+  .section-score { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 20px; margin-bottom: 20px; }
+  .section-score h3 { font-size: 1rem; color: var(--blue-dark); margin-bottom: 10px; }
+  .score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.88rem; }
+  .score-row .topic-lbl { width: 180px; font-weight: 600; }
+  .score-row .score-bar-outer { flex: 1; background: #e9ecef; border-radius: 999px; height: 10px; }
+  .score-row .score-bar-inner { height: 10px; border-radius: 999px; }
+  .score-row .score-pct { width: 50px; text-align: right; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌍 Geography Online Test</h1>
+  <p>Read every question carefully. You must confirm you have reviewed your answers before submitting.</p>
+  <div class="meta-chips">
+    <span class="meta-chip">📝 35 Questions</span>
+    <span class="meta-chip">⏱️ Timed</span>
+    <span class="meta-chip">🔒 Self-Marking</span>
+    <span class="meta-chip">✅ Auto-graded on Submit</span>
+  </div>
+</header>
+
+<div id="timer-bar">
+  <span id="q-counter">Question 0 / 35 answered</span>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="prog-outer"><div class="prog-inner" id="prog-inner" style="width:0%"></div></div>
+    <span id="timer-display">00:00</span>
+  </div>
+</div>
+
+<main id="test-main">
+
+  <!-- ════════ SECTION 1: URBANIZATION ════════ -->
+  <div class="section-hdr">🏙️ Section 1 — Urbanization (Questions 1–8)</div>
+
+  <div class="q-card" id="qc-1">
+    <div class="q-num">Question 1 · Multiple Choice</div>
+    <div class="q-text">In the early 1900s, approximately what percentage of Canadians lived in urban areas?</div>
+    <div class="options" id="opts-1">
+      <label class="opt"><input type="radio" name="q1" value="A"> A) 80%</label>
+      <label class="opt"><input type="radio" name="q1" value="B"> B) 37%</label>
+      <label class="opt"><input type="radio" name="q1" value="C"> C) 60%</label>
+      <label class="opt"><input type="radio" name="q1" value="D"> D) 50%</label>
+    </div>
+    <div class="q-result" id="qr-1"></div>
+  </div>
+
+  <div class="q-card" id="qc-2">
+    <div class="q-num">Question 2 · Multiple Choice</div>
+    <div class="q-text">Today, approximately what percentage of Canadians live in urban areas?</div>
+    <div class="options" id="opts-2">
+      <label class="opt"><input type="radio" name="q2" value="A"> A) 37%</label>
+      <label class="opt"><input type="radio" name="q2" value="B"> B) 50%</label>
+      <label class="opt"><input type="radio" name="q2" value="C"> C) 80%</label>
+      <label class="opt"><input type="radio" name="q2" value="D"> D) 90%</label>
+    </div>
+    <div class="q-result" id="qr-2"></div>
+  </div>
+
+  <div class="q-card" id="qc-3">
+    <div class="q-num">Question 3 · Multiple Choice</div>
+    <div class="q-text">What does the term "ecumene" mean?</div>
+    <div class="options" id="opts-3">
+      <label class="opt"><input type="radio" name="q3" value="A"> A) Uninhabited world</label>
+      <label class="opt"><input type="radio" name="q3" value="B"> B) Inhabited world — where most Canadians live</label>
+      <label class="opt"><input type="radio" name="q3" value="C"> C) Canada's northern wilderness</label>
+      <label class="opt"><input type="radio" name="q3" value="D"> D) A type of climate region</label>
+    </div>
+    <div class="q-result" id="qr-3"></div>
+  </div>
+
+  <div class="q-card" id="qc-4">
+    <div class="q-num">Question 4 · Multiple Choice</div>
+    <div class="q-text">What is urban sprawl?</div>
+    <div class="options" id="opts-4">
+      <label class="opt"><input type="radio" name="q4" value="A"> A) When older city areas are rebuilt into new land uses</label>
+      <label class="opt"><input type="radio" name="q4" value="B"> B) When people move from cities back to the countryside</label>
+      <label class="opt"><input type="radio" name="q4" value="C"> C) When cities expand onto surrounding farmland and countryside</label>
+      <label class="opt"><input type="radio" name="q4" value="D"> D) When downtown skyscrapers are demolished</label>
+    </div>
+    <div class="q-result" id="qr-4"></div>
+  </div>
+
+  <div class="q-card" id="qc-5">
+    <div class="q-num">Question 5 · True or False</div>
+    <div class="q-text">90% of Canadians live within 600 km of the US border.</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-5-T" onclick="selectTF(5,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-5-F" onclick="selectTF(5,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-5"></div>
+  </div>
+
+  <div class="q-card" id="qc-6">
+    <div class="q-num">Question 6 · Multiple Choice</div>
+    <div class="q-text">What is the Central Business District (CBD)?</div>
+    <div class="options" id="opts-6">
+      <label class="opt"><input type="radio" name="q6" value="A"> A) A type of residential neighbourhood</label>
+      <label class="opt"><input type="radio" name="q6" value="B"> B) The downtown area where goods and services are bought and sold</label>
+      <label class="opt"><input type="radio" name="q6" value="C"> C) A government planning committee</label>
+      <label class="opt"><input type="radio" name="q6" value="D"> D) An industrial zone at the edge of a city</label>
+    </div>
+    <div class="q-result" id="qr-6"></div>
+  </div>
+
+  <div class="q-card" id="qc-7">
+    <div class="q-num">Question 7 · True or False</div>
+    <div class="q-text">Urban renewal is when cities expand onto surrounding farmland.</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-7-T" onclick="selectTF(7,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-7-F" onclick="selectTF(7,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-7"></div>
+  </div>
+
+  <div class="q-card" id="qc-8">
+    <div class="q-num">Question 8 · Short Answer</div>
+    <div class="q-text">What three criteria do municipal governments use when planning land use in a city?</div>
+    <textarea class="short-input" id="sa-8" placeholder="Type your answer here..."></textarea>
+    <div class="sa-model" id="sam-8">✓ Model answer: Convenience, safety, and economic usefulness.</div>
+    <div class="sa-wrong-note" id="saw-8">✗ Model answer: Convenience, safety, and economic usefulness.</div>
+    <div class="q-result" id="qr-8"></div>
+  </div>
+
+  <!-- ════════ SECTION 2: TYPES OF INDUSTRY ════════ -->
+  <div class="section-hdr">🏭 Section 2 — Types of Industry (Questions 9–16)</div>
+
+  <div class="q-card" id="qc-9">
+    <div class="q-num">Question 9 · Multiple Choice</div>
+    <div class="q-text">Which type of industry takes raw materials from the natural environment?</div>
+    <div class="options" id="opts-9">
+      <label class="opt"><input type="radio" name="q9" value="A"> A) Tertiary</label>
+      <label class="opt"><input type="radio" name="q9" value="B"> B) Secondary</label>
+      <label class="opt"><input type="radio" name="q9" value="C"> C) Basic</label>
+      <label class="opt"><input type="radio" name="q9" value="D"> D) Primary</label>
+    </div>
+    <div class="q-result" id="qr-9"></div>
+  </div>
+
+  <div class="q-card" id="qc-10">
+    <div class="q-num">Question 10 · Multiple Choice</div>
+    <div class="q-text">Approximately what percentage of Canada's workforce is employed in the tertiary sector?</div>
+    <div class="options" id="opts-10">
+      <label class="opt"><input type="radio" name="q10" value="A"> A) 4%</label>
+      <label class="opt"><input type="radio" name="q10" value="B"> B) 22%</label>
+      <label class="opt"><input type="radio" name="q10" value="C"> C) 50%</label>
+      <label class="opt"><input type="radio" name="q10" value="D"> D) 74%</label>
+    </div>
+    <div class="q-result" id="qr-10"></div>
+  </div>
+
+  <div class="q-card" id="qc-11">
+    <div class="q-num">Question 11 · Multiple Choice</div>
+    <div class="q-text">Which of the following is an example of a PRIMARY industry?</div>
+    <div class="options" id="opts-11">
+      <label class="opt"><input type="radio" name="q11" value="A"> A) Teaching</label>
+      <label class="opt"><input type="radio" name="q11" value="B"> B) Car manufacturing</label>
+      <label class="opt"><input type="radio" name="q11" value="C"> C) Banking</label>
+      <label class="opt"><input type="radio" name="q11" value="D"> D) Mining</label>
+    </div>
+    <div class="q-result" id="qr-11"></div>
+  </div>
+
+  <div class="q-card" id="qc-12">
+    <div class="q-num">Question 12 · Multiple Choice</div>
+    <div class="q-text">What is secondary manufacturing?</div>
+    <div class="options" id="opts-12">
+      <label class="opt"><input type="radio" name="q12" value="A"> A) Extracting raw materials from nature</label>
+      <label class="opt"><input type="radio" name="q12" value="B"> B) Using a base product (like steel) to make a finished product (like a car)</label>
+      <label class="opt"><input type="radio" name="q12" value="C"> C) Providing services to the public</label>
+      <label class="opt"><input type="radio" name="q12" value="D"> D) Combining raw materials to make a base product</label>
+    </div>
+    <div class="q-result" id="qr-12"></div>
+  </div>
+
+  <div class="q-card" id="qc-13">
+    <div class="q-num">Question 13 · True or False</div>
+    <div class="q-text">A basic industry receives money from inside the town or city.</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-13-T" onclick="selectTF(13,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-13-F" onclick="selectTF(13,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-13"></div>
+  </div>
+
+  <div class="q-card" id="qc-14">
+    <div class="q-num">Question 14 · Multiple Choice</div>
+    <div class="q-text">A lawyer is an example of which type of industry?</div>
+    <div class="options" id="opts-14">
+      <label class="opt"><input type="radio" name="q14" value="A"> A) Primary</label>
+      <label class="opt"><input type="radio" name="q14" value="B"> B) Secondary</label>
+      <label class="opt"><input type="radio" name="q14" value="C"> C) Tertiary</label>
+      <label class="opt"><input type="radio" name="q14" value="D"> D) Basic</label>
+    </div>
+    <div class="q-result" id="qr-14"></div>
+  </div>
+
+  <div class="q-card" id="qc-15">
+    <div class="q-num">Question 15 · True or False</div>
+    <div class="q-text">The most important phase of secondary industry is manufacturing.</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-15-T" onclick="selectTF(15,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-15-F" onclick="selectTF(15,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-15"></div>
+  </div>
+
+  <div class="q-card" id="qc-16">
+    <div class="q-num">Question 16 · Short Answer</div>
+    <div class="q-text">Give ONE example each of a primary, secondary, and tertiary industry worker.</div>
+    <textarea class="short-input" id="sa-16" placeholder="Primary: ___   Secondary: ___   Tertiary: ___"></textarea>
+    <div class="sa-model" id="sam-16">✓ Example: Primary: Farmer / Miner. Secondary: Factory worker / Steel worker. Tertiary: Teacher / Doctor / Police officer.</div>
+    <div class="sa-wrong-note" id="saw-16">✗ Example answer: Primary: Farmer. Secondary: Factory worker. Tertiary: Teacher.</div>
+    <div class="q-result" id="qr-16"></div>
+  </div>
+
+  <!-- ════════ SECTION 3: NATURAL RESOURCES ════════ -->
+  <div class="section-hdr">🌲 Section 3 — Natural Resources (Questions 17–20)</div>
+
+  <div class="q-card" id="qc-17">
+    <div class="q-num">Question 17 · Multiple Choice</div>
+    <div class="q-text">What is a natural resource?</div>
+    <div class="options" id="opts-17">
+      <label class="opt"><input type="radio" name="q17" value="A"> A) Something humans create and manufacture</label>
+      <label class="opt"><input type="radio" name="q17" value="B"> B) Things from the earth — animals, plants, water, soils, minerals, the sun</label>
+      <label class="opt"><input type="radio" name="q17" value="C"> C) Money earned from selling goods</label>
+      <label class="opt"><input type="radio" name="q17" value="D"> D) A type of secondary industry</label>
+    </div>
+    <div class="q-result" id="qr-17"></div>
+  </div>
+
+  <div class="q-card" id="qc-18">
+    <div class="q-num">Question 18 · Multiple Choice</div>
+    <div class="q-text">The shaft (body) of a pencil is made from which natural resource?</div>
+    <div class="options" id="opts-18">
+      <label class="opt"><input type="radio" name="q18" value="A"> A) Aluminum</label>
+      <label class="opt"><input type="radio" name="q18" value="B"> B) Graphite</label>
+      <label class="opt"><input type="radio" name="q18" value="C"> C) Rubber</label>
+      <label class="opt"><input type="radio" name="q18" value="D"> D) Wood</label>
+    </div>
+    <div class="q-result" id="qr-18"></div>
+  </div>
+
+  <div class="q-card" id="qc-19">
+    <div class="q-num">Question 19 · True or False</div>
+    <div class="q-text">The writing part (lead) of a pencil is made from graphite.</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-19-T" onclick="selectTF(19,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-19-F" onclick="selectTF(19,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-19"></div>
+  </div>
+
+  <div class="q-card" id="qc-20">
+    <div class="q-num">Question 20 · Short Answer</div>
+    <div class="q-text">What is the difference between a natural resource and a human resource? Give one example of each.</div>
+    <textarea class="short-input" id="sa-20" placeholder="Type your answer here..."></textarea>
+    <div class="sa-model" id="sam-20">✓ Natural resource: something from the earth (e.g., wood, minerals, water). Human resource: something humans create/make (e.g., a plane, machine, or tool).</div>
+    <div class="sa-wrong-note" id="saw-20">✗ Model: Natural resource = from earth (e.g., wood). Human resource = human-made (e.g., airplane).</div>
+    <div class="q-result" id="qr-20"></div>
+  </div>
+
+  <!-- ════════ SECTION 4: POPULATION PYRAMIDS ════════ -->
+  <div class="section-hdr">📊 Section 4 — Population Pyramids (Questions 21–25)</div>
+
+  <div class="q-card" id="qc-21">
+    <div class="q-num">Question 21 · Multiple Choice</div>
+    <div class="q-text">What type of graph is a population pyramid?</div>
+    <div class="options" id="opts-21">
+      <label class="opt"><input type="radio" name="q21" value="A"> A) A line graph</label>
+      <label class="opt"><input type="radio" name="q21" value="B"> B) A pie chart</label>
+      <label class="opt"><input type="radio" name="q21" value="C"> C) A paired horizontal bar graph</label>
+      <label class="opt"><input type="radio" name="q21" value="D"> D) A scatter plot</label>
+    </div>
+    <div class="q-result" id="qr-21"></div>
+  </div>
+
+  <div class="q-card" id="qc-22">
+    <div class="q-num">Question 22 · Multiple Choice</div>
+    <div class="q-text">What is the dependency ratio made up of?</div>
+    <div class="options" id="opts-22">
+      <label class="opt"><input type="radio" name="q22" value="A"> A) The working-age population (15–64)</label>
+      <label class="opt"><input type="radio" name="q22" value="B"> B) Only the elderly (65+)</label>
+      <label class="opt"><input type="radio" name="q22" value="C"> C) The young (0–14) and elderly (65+) age groups</label>
+      <label class="opt"><input type="radio" name="q22" value="D"> D) Only young people (0–14)</label>
+    </div>
+    <div class="q-result" id="qr-22"></div>
+  </div>
+
+  <div class="q-card" id="qc-23">
+    <div class="q-num">Question 23 · True or False</div>
+    <div class="q-text">Females are shown on the left side of a population pyramid.</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-23-T" onclick="selectTF(23,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-23-F" onclick="selectTF(23,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-23"></div>
+  </div>
+
+  <div class="q-card" id="qc-24">
+    <div class="q-num">Question 24 · Multiple Choice</div>
+    <div class="q-text">What does a wide base on a population pyramid indicate?</div>
+    <div class="options" id="opts-24">
+      <label class="opt"><input type="radio" name="q24" value="A"> A) A large elderly population</label>
+      <label class="opt"><input type="radio" name="q24" value="B"> B) A high birth rate / large young population</label>
+      <label class="opt"><input type="radio" name="q24" value="C"> C) A high death rate</label>
+      <label class="opt"><input type="radio" name="q24" value="D"> D) A declining population</label>
+    </div>
+    <div class="q-result" id="qr-24"></div>
+  </div>
+
+  <div class="q-card" id="qc-25">
+    <div class="q-num">Question 25 · Short Answer</div>
+    <div class="q-text">Explain what population pyramids are used for and what information they show.</div>
+    <textarea class="short-input" id="sa-25" placeholder="Type your answer here..."></textarea>
+    <div class="sa-model" id="sam-25">✓ Population pyramids are paired horizontal bar graphs that show the make-up of a population by age and gender (as percentages). They help us predict future population trends and the needs of a country.</div>
+    <div class="sa-wrong-note" id="saw-25">✗ Model: Paired horizontal bar graph showing population by age and gender. Used to predict future population trends and needs.</div>
+    <div class="q-result" id="qr-25"></div>
+  </div>
+
+  <!-- ════════ SECTION 5: IMMIGRATION ════════ -->
+  <div class="section-hdr">✈️ Section 5 — Immigration & Multiculturalism (Questions 26–32)</div>
+
+  <div class="q-card" id="qc-26">
+    <div class="q-num">Question 26 · Multiple Choice</div>
+    <div class="q-text">How many categories of immigrants are there in Canada?</div>
+    <div class="options" id="opts-26">
+      <label class="opt"><input type="radio" name="q26" value="A"> A) 2</label>
+      <label class="opt"><input type="radio" name="q26" value="B"> B) 3</label>
+      <label class="opt"><input type="radio" name="q26" value="C"> C) 4</label>
+      <label class="opt"><input type="radio" name="q26" value="D"> D) 5</label>
+    </div>
+    <div class="q-result" id="qr-26"></div>
+  </div>
+
+  <div class="q-card" id="qc-27">
+    <div class="q-num">Question 27 · Multiple Choice</div>
+    <div class="q-text">What score must Skilled Worker immigrants achieve on Canada's point system?</div>
+    <div class="options" id="opts-27">
+      <label class="opt"><input type="radio" name="q27" value="A"> A) 50/100</label>
+      <label class="opt"><input type="radio" name="q27" value="B"> B) 60/100</label>
+      <label class="opt"><input type="radio" name="q27" value="C"> C) 67/100</label>
+      <label class="opt"><input type="radio" name="q27" value="D"> D) 75/100</label>
+    </div>
+    <div class="q-result" id="qr-27"></div>
+  </div>
+
+  <div class="q-card" id="qc-28">
+    <div class="q-num">Question 28 · Multiple Choice</div>
+    <div class="q-text">Which of the following is a PUSH factor for immigration?</div>
+    <div class="options" id="opts-28">
+      <label class="opt"><input type="radio" name="q28" value="A"> A) Better job opportunities in a new country</label>
+      <label class="opt"><input type="radio" name="q28" value="B"> B) Family already living in Canada</label>
+      <label class="opt"><input type="radio" name="q28" value="C"> C) Religious freedom in a new country</label>
+      <label class="opt"><input type="radio" name="q28" value="D"> D) War and political persecution at home</label>
+    </div>
+    <div class="q-result" id="qr-28"></div>
+  </div>
+
+  <div class="q-card" id="qc-29">
+    <div class="q-num">Question 29 · True or False</div>
+    <div class="q-text">Canada is often described as a cultural "melting pot."</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-29-T" onclick="selectTF(29,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-29-F" onclick="selectTF(29,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-29"></div>
+  </div>
+
+  <div class="q-card" id="qc-30">
+    <div class="q-num">Question 30 · Multiple Choice</div>
+    <div class="q-text">What is cultural baggage?</div>
+    <div class="options" id="opts-30">
+      <label class="opt"><input type="radio" name="q30" value="A"> A) Problems caused by having too many cultures in one country</label>
+      <label class="opt"><input type="radio" name="q30" value="B"> B) The cultural traditions and customs a new immigrant brings from their home country</label>
+      <label class="opt"><input type="radio" name="q30" value="C"> C) Extra luggage immigrants bring when moving</label>
+      <label class="opt"><input type="radio" name="q30" value="D"> D) Laws that restrict cultural expression</label>
+    </div>
+    <div class="q-result" id="qr-30"></div>
+  </div>
+
+  <div class="q-card" id="qc-31">
+    <div class="q-num">Question 31 · Multiple Choice</div>
+    <div class="q-text">Which type of immigrant uses the POINT SYSTEM to qualify?</div>
+    <div class="options" id="opts-31">
+      <label class="opt"><input type="radio" name="q31" value="A"> A) Family Class Immigrant</label>
+      <label class="opt"><input type="radio" name="q31" value="B"> B) Refugee</label>
+      <label class="opt"><input type="radio" name="q31" value="C"> C) Economic / Independent Immigrant</label>
+      <label class="opt"><input type="radio" name="q31" value="D"> D) Tourist</label>
+    </div>
+    <div class="q-result" id="qr-31"></div>
+  </div>
+
+  <div class="q-card" id="qc-32">
+    <div class="q-num">Question 32 · Short Answer</div>
+    <div class="q-text">What is multiculturalism? How does Canada's "mosaic" differ from the United States' "melting pot"?</div>
+    <textarea class="short-input" id="sa-32" placeholder="Type your answer here..."></textarea>
+    <div class="sa-model" id="sam-32">✓ Multiculturalism is the presence and support for several different cultural groups within a society. Canada's mosaic means cultures coexist and maintain their own identity. A melting pot (like the USA) means cultures blend together into one dominant culture.</div>
+    <div class="sa-wrong-note" id="saw-32">✗ Model: Multiculturalism = support for many cultures. Mosaic = cultures coexist (Canada). Melting pot = cultures blend into one (USA).</div>
+    <div class="q-result" id="qr-32"></div>
+  </div>
+
+  <!-- ════════ SECTION 6: CLIMATE CHANGE ════════ -->
+  <div class="section-hdr">🌡️ Section 6 — Climate Change & Ecological Footprint (Questions 33–35)</div>
+
+  <div class="q-card" id="qc-33">
+    <div class="q-num">Question 33 · Multiple Choice</div>
+    <div class="q-text">Which of the following is a clean/renewable energy source?</div>
+    <div class="options" id="opts-33">
+      <label class="opt"><input type="radio" name="q33" value="A"> A) Coal</label>
+      <label class="opt"><input type="radio" name="q33" value="B"> B) Natural gas</label>
+      <label class="opt"><input type="radio" name="q33" value="C"> C) Solar power</label>
+      <label class="opt"><input type="radio" name="q33" value="D"> D) Gasoline</label>
+    </div>
+    <div class="q-result" id="qr-33"></div>
+  </div>
+
+  <div class="q-card" id="qc-34">
+    <div class="q-num">Question 34 · True or False</div>
+    <div class="q-text">Stopping deforestation helps reduce climate change because trees absorb carbon dioxide.</div>
+    <div class="tf-row">
+      <div class="tf-opt" id="tf-34-T" onclick="selectTF(34,'T')">✅ True</div>
+      <div class="tf-opt" id="tf-34-F" onclick="selectTF(34,'F')">❌ False</div>
+    </div>
+    <div class="q-result" id="qr-34"></div>
+  </div>
+
+  <div class="q-card" id="qc-35">
+    <div class="q-num">Question 35 · Short Answer</div>
+    <div class="q-text">List THREE specific solutions to climate change. For each, briefly explain how it helps.</div>
+    <textarea class="short-input" id="sa-35" placeholder="1. ___  2. ___  3. ___" style="min-height:90px;"></textarea>
+    <div class="sa-model" id="sam-35">✓ Examples: (1) Electric cars — reduce fossil fuel emissions. (2) Solar/wind energy — replaces coal/gas without pollution. (3) Recycling/reduce/reuse — reduces waste going to landfill. (4) Stop deforestation + replant — trees absorb CO₂. (5) More public transit — fewer individual car trips.</div>
+    <div class="sa-wrong-note" id="saw-35">✗ Any 3 valid solutions accepted. See model answer above.</div>
+    <div class="q-result" id="qr-35"></div>
+  </div>
+
+  <!-- ════════ CONFIRMATION & SUBMIT ════════ -->
+  <div id="confirm-box">
+    <h3>⚠️ Before You Submit — Double Check!</h3>
+    <p style="font-size:0.9rem;color:#555;margin-bottom:12px;">Make sure you have completed the following before submitting your test:</p>
+    <ul class="checklist">
+      <li>Read every question carefully a second time</li>
+      <li>Answered all 35 questions (check the progress bar at the top)</li>
+      <li>Reviewed all short-answer responses for completeness</li>
+      <li>Checked all True/False selections are what you intended</li>
+    </ul>
+    <label id="double-check-label">
+      <input type="checkbox" id="double-check" onchange="toggleSubmit()">
+      <span>I confirm that I have read all my answers and double-checked my work. I am ready to submit.</span>
+    </label>
+    <button id="submit-btn" onclick="submitTest()">🔒 Submit Test &amp; Get My Score</button>
+  </div>
+
+</main>
+
+<!-- ════════ RESULTS PANEL ════════ -->
+<div id="results-panel">
+  <div class="result-banner" id="result-banner">
+    <h2 id="result-emoji">🎉</h2>
+    <div class="pct" id="result-pct">0%</div>
+    <h2 id="result-fraction">0 / 0</h2>
+    <p id="result-msg">Good effort!</p>
+  </div>
+
+  <div class="section-score">
+    <h3>📊 Score by Topic</h3>
+    <div id="topic-breakdown"></div>
+  </div>
+
+  <div class="breakdown-grid" id="breakdown-grid"></div>
+
+  <div style="background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.12);padding:20px;margin-bottom:20px;">
+    <h3 style="font-size:1rem;color:#1a4d7a;margin-bottom:14px;">📋 Question Review</h3>
+    <div id="review-list"></div>
+  </div>
+
+  <button class="retry-btn" onclick="location.reload()">🔄 Retake Test</button>
+</div>
+
+<script>
+/* ══════════════════════════ DATA ══════════════════════════ */
+// MCQ answers (question number → correct value)
+const mcqAnswers = {
+  1:'B', 2:'C', 3:'B', 4:'C', 6:'B', 9:'D', 10:'D',
+  11:'D', 12:'B', 14:'C', 17:'B', 18:'D', 21:'C', 22:'C',
+  24:'B', 26:'B', 27:'C', 28:'D', 30:'B', 31:'C', 33:'C'
+};
+
+// TF answers (question number → 'T' or 'F')
+const tfAnswers = {5:'T', 7:'F', 13:'F', 15:'T', 19:'T', 23:'F', 29:'F', 34:'T'};
+
+// Short answer questions (marked separately — uses keyword matching)
+const saQuestions = {
+  8:  {keywords:['convenience','safety','economic'], must:2},
+  16: {keywords:['mining','farming','fishing','forestry','farmer','teacher','banker','doctor','police','lawyer','factory','mill'], must:2},
+  20: {keywords:['earth','natural','human','made','mineral','wood','water','plane','machine','tool'], must:3},
+  25: {keywords:['age','gender','bar','percentage','trend','needs'], must:3},
+  32: {keywords:['mosaic','melting','coexist','blend','multicultur','culture'], must:3},
+  35: {keywords:['solar','wind','hydro','electric','recycle','deforest','replant','transit','fossil'], must:2},
+};
+
+// Topic mapping
+const topicMap = {
+  1:'Urbanization', 2:'Urbanization', 3:'Urbanization', 4:'Urbanization',
+  5:'Urbanization', 6:'Urbanization', 7:'Urbanization', 8:'Urbanization',
+  9:'Industry', 10:'Industry', 11:'Industry', 12:'Industry',
+  13:'Industry', 14:'Industry', 15:'Industry', 16:'Industry',
+  17:'Natural Resources', 18:'Natural Resources', 19:'Natural Resources', 20:'Natural Resources',
+  21:'Population Pyramids', 22:'Population Pyramids', 23:'Population Pyramids',
+  24:'Population Pyramids', 25:'Population Pyramids',
+  26:'Immigration', 27:'Immigration', 28:'Immigration', 29:'Immigration',
+  30:'Immigration', 31:'Immigration', 32:'Immigration',
+  33:'Climate Change', 34:'Climate Change', 35:'Climate Change'
+};
+
+const TOTAL = 35;
+
+/* ══════════════════════════ TIMER ══════════════════════════ */
+let elapsed = 0;
+const timerInterval = setInterval(() => {
+  elapsed++;
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  document.getElementById('timer-display').textContent = `${m}:${s}`;
+}, 1000);
+
+/* ══════════════════════════ ANSWER TRACKING ══════════════════════════ */
+const userAnswers = {};
+let answeredCount = 0;
+
+function countAnswered() {
+  let n = 0;
+  // MCQ
+  Object.keys(mcqAnswers).forEach(q => {
+    const sel = document.querySelector(`input[name="q${q}"]:checked`);
+    if (sel) n++;
+  });
+  // TF
+  Object.keys(tfAnswers).forEach(q => {
+    if (userAnswers['tf_' + q]) n++;
+  });
+  // SA
+  Object.keys(saQuestions).forEach(q => {
+    const el = document.getElementById('sa-' + q);
+    if (el && el.value.trim().length > 3) n++;
+  });
+  document.getElementById('q-counter').textContent = `Question ${n} / ${TOTAL} answered`;
+  document.getElementById('prog-inner').style.width = (n / TOTAL * 100) + '%';
+}
+
+// Track MCQ changes
+document.querySelectorAll('input[type="radio"]').forEach(r => {
+  r.addEventListener('change', countAnswered);
+});
+document.querySelectorAll('.short-input').forEach(inp => {
+  inp.addEventListener('input', countAnswered);
+});
+
+/* ══════════════════════════ TRUE/FALSE ══════════════════════════ */
+function selectTF(q, val) {
+  const t = document.getElementById(`tf-${q}-T`);
+  const f = document.getElementById(`tf-${q}-F`);
+  if (!t || !f) return;
+  t.className = 'tf-opt' + (val === 'T' ? ' selected' : '');
+  f.className = 'tf-opt' + (val === 'F' ? ' selected' : '');
+  userAnswers['tf_' + q] = val;
+  countAnswered();
+}
+
+/* ══════════════════════════ SUBMIT TOGGLE ══════════════════════════ */
+function toggleSubmit() {
+  const btn = document.getElementById('submit-btn');
+  const cb = document.getElementById('double-check');
+  btn.classList.toggle('ready', cb.checked);
+}
+
+/* ══════════════════════════ SUBMIT & MARK ══════════════════════════ */
+function normalize(s) { return (s || '').toLowerCase(); }
+
+function submitTest() {
+  clearInterval(timerInterval);
+  let totalScore = 0;
+  const results = {};
+
+  // Mark MCQ
+  Object.entries(mcqAnswers).forEach(([q, correct]) => {
+    const sel = document.querySelector(`input[name="q${q}"]:checked`);
+    const given = sel ? sel.value : null;
+    const ok = given === correct;
+    if (ok) totalScore++;
+    results[q] = { ok, given, correct, type: 'mcq' };
+    // Highlight options
+    document.querySelectorAll(`input[name="q${q}"]`).forEach(r => {
+      const lbl = r.parentElement;
+      if (r.value === correct) lbl.classList.add('show-correct');
+      if (r.value === given && !ok) lbl.classList.add('wrong-ans');
+    });
+    showQResult(q, ok, given ? '' : 'Not answered');
+  });
+
+  // Mark TF
+  Object.entries(tfAnswers).forEach(([q, correct]) => {
+    const given = userAnswers['tf_' + q];
+    const ok = given === correct;
+    if (ok) totalScore++;
+    results[q] = { ok, given, correct, type: 'tf' };
+    const tEl = document.getElementById(`tf-${q}-T`);
+    const fEl = document.getElementById(`tf-${q}-F`);
+    if (tEl && fEl) {
+      if (correct === 'T') tEl.classList.add('show-correct');
+      else fEl.classList.add('show-correct');
+      if (given === 'T' && !ok) tEl.classList.add('wrong-ans');
+      if (given === 'F' && !ok) fEl.classList.add('wrong-ans');
+    }
+    showQResult(q, ok, given ? '' : 'Not answered');
+  });
+
+  // Mark Short Answer (keyword matching)
+  Object.entries(saQuestions).forEach(([q, config]) => {
+    const el = document.getElementById('sa-' + q);
+    const val = normalize(el ? el.value : '');
+    const hits = config.keywords.filter(kw => val.includes(kw)).length;
+    const ok = hits >= config.must;
+    if (ok) totalScore++;
+    results[q] = { ok, given: el ? el.value : '', type: 'sa' };
+    if (el) el.classList.add(ok ? 'correct-ans' : 'wrong-ans');
+    const model = document.getElementById('sam-' + q);
+    const wrong = document.getElementById('saw-' + q);
+    if (ok && model) model.style.display = 'block';
+    if (!ok && wrong) wrong.style.display = 'block';
+    showQResult(q, ok, '');
+  });
+
+  // Show results
+  showResults(totalScore, results);
+}
+
+function showQResult(q, ok, note) {
+  const el = document.getElementById('qr-' + q);
+  if (!el) return;
+  el.style.display = 'block';
+  el.className = 'q-result ' + (ok ? 'ok' : 'err');
+  el.textContent = ok ? '✓ Correct' : ('✗ Incorrect' + (note ? ' — ' + note : ''));
+}
+
+function showResults(score, results) {
+  document.getElementById('test-main').style.display = 'none';
+  const panel = document.getElementById('results-panel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth' });
+
+  const pct = Math.round(score / TOTAL * 100);
+  const banner = document.getElementById('result-banner');
+  banner.className = 'result-banner ' + (pct >= 75 ? 'high' : pct >= 50 ? 'mid' : 'low');
+  document.getElementById('result-pct').textContent = pct + '%';
+  document.getElementById('result-fraction').textContent = `${score} / ${TOTAL}`;
+  document.getElementById('result-emoji').textContent = pct >= 80 ? '🎉 Excellent!' : pct >= 65 ? '👍 Good Job!' : pct >= 50 ? '📚 Keep Studying!' : '💪 Don\'t Give Up!';
+  document.getElementById('result-msg').textContent = pct >= 75
+    ? 'You are well prepared for your quiz!'
+    : pct >= 50 ? 'Review the sections you missed and try again.'
+    : 'Go back to the study worksheet and review before the quiz.';
+
+  // Topic breakdown
+  const topicScores = {};
+  const topicTotal = {};
+  Object.entries(results).forEach(([q, r]) => {
+    const topic = topicMap[+q] || 'Other';
+    topicTotal[topic] = (topicTotal[topic] || 0) + 1;
+    if (r.ok) topicScores[topic] = (topicScores[topic] || 0) + 1;
+  });
+  const colors = {'Urbanization':'#2E75B6','Industry':'#28a745','Natural Resources':'#e67e22','Population Pyramids':'#6f42c1','Immigration':'#dc3545','Climate Change':'#ffc107'};
+  const tbHtml = Object.keys(topicTotal).map(topic => {
+    const got = topicScores[topic] || 0;
+    const tot = topicTotal[topic];
+    const p = Math.round(got / tot * 100);
+    const color = colors[topic] || '#333';
+    return `<div class="score-row">
+      <div class="topic-lbl">${topic}</div>
+      <div class="score-bar-outer"><div class="score-bar-inner" style="width:${p}%;background:${color};"></div></div>
+      <div class="score-pct">${got}/${tot}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('topic-breakdown').innerHTML = tbHtml;
+
+  // Breakdown grid
+  const m = Math.floor(elapsed / 60), s = elapsed % 60;
+  document.getElementById('breakdown-grid').innerHTML = `
+    <div class="breakdown-card"><div class="bc-num">${score}</div><div class="bc-label">Correct</div></div>
+    <div class="breakdown-card"><div class="bc-num">${TOTAL - score}</div><div class="bc-label">Incorrect</div></div>
+    <div class="breakdown-card"><div class="bc-num">${pct}%</div><div class="bc-label">Score</div></div>
+    <div class="breakdown-card"><div class="bc-num">${m}:${String(s).padStart(2,'0')}</div><div class="bc-label">Time Taken</div></div>
+  `;
+
+  // Review list
+  const labels = {
+    1:'In the early 1900s, what % of Canadians lived in urban areas?',
+    2:'Today, what % of Canadians live in urban areas?',
+    3:'What does "ecumene" mean?',
+    4:'What is urban sprawl?',
+    5:'90% of Canadians live within 600 km of the US border.',
+    6:'What is the CBD?',
+    7:'Urban renewal = cities expanding onto farmland.',
+    8:'3 criteria for city planning.',
+    9:'Which industry takes raw materials from nature?',
+    10:'What % of workforce is in tertiary industry?',
+    11:'Example of a PRIMARY industry?',
+    12:'What is secondary manufacturing?',
+    13:'A basic industry receives money from inside the town.',
+    14:'What type of industry is a lawyer?',
+    15:'The most important secondary phase is manufacturing.',
+    16:'Give one example of each industry type.',
+    17:'What is a natural resource?',
+    18:'Pencil shaft material?',
+    19:'Pencil lead is made from graphite.',
+    20:'Natural vs human resource — example each.',
+    21:'Population pyramid — type of graph?',
+    22:'Dependency ratio components?',
+    23:'Females are on the left side of a pyramid.',
+    24:'Wide base on pyramid = ?',
+    25:'What are population pyramids used for?',
+    26:'How many immigrant categories in Canada?',
+    27:'Points needed for Skilled Worker immigrant?',
+    28:'Which is a PUSH factor?',
+    29:'Canada is a cultural "melting pot."',
+    30:'What is cultural baggage?',
+    31:'Which immigrant type uses the point system?',
+    32:'Multiculturalism — mosaic vs melting pot.',
+    33:'Example of clean/renewable energy?',
+    34:'Stopping deforestation helps climate because trees absorb CO₂.',
+    35:'List 3 solutions to climate change.',
+  };
+  const reviewHtml = Object.entries(results).map(([q, r]) =>
+    `<div class="review-card ${r.ok ? 'correct' : ''}">
+      <div class="q-num">Q${q} · ${topicMap[+q]}</div>
+      <div class="rv-q">${labels[+q] || 'Question ' + q}</div>
+      ${r.ok ? '<div class="rv-correct">✓ Correct</div>' : `<div class="rv-your">✗ Your answer noted above</div>`}
+    </div>`
+  ).join('');
+  document.getElementById('review-list').innerHTML = reviewHtml;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geography Interactive Study Worksheet</title>
+<style>
+  :root {
+    --blue: #2E75B6; --blue-light: #D6E8F7; --blue-dark: #1a4d7a;
+    --green: #1e7e34; --green-light: #d4edda; --green-bg: #28a745;
+    --red: #c82333; --red-light: #f8d7da;
+    --yellow: #ffc107; --yellow-light: #fff3cd;
+    --purple: #6f42c1; --purple-light: #e8e0f7;
+    --orange: #e67e22; --orange-light: #fdebd0;
+    --gray: #6c757d; --gray-light: #f8f9fa; --gray-border: #dee2e6;
+    --radius: 10px; --shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #333; min-height: 100vh; }
+
+  /* ── NAV ── */
+  nav { background: var(--blue-dark); color: #fff; padding: 0; display: flex; flex-wrap: wrap; align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100; }
+  nav .brand { padding: 12px 20px; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px; border-right: 1px solid rgba(255,255,255,0.2); }
+  nav button { background: none; border: none; color: rgba(255,255,255,0.85); padding: 12px 16px; cursor: pointer; font-size: 0.88rem; transition: background 0.2s; white-space: nowrap; }
+  nav button:hover { background: rgba(255,255,255,0.15); }
+  nav button.active { background: var(--blue); color: #fff; font-weight: 700; }
+
+  /* ── SECTIONS ── */
+  .section { display: none; max-width: 860px; margin: 28px auto; padding: 0 16px 60px; }
+  .section.active { display: block; }
+
+  /* ── CARDS ── */
+  .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1.35rem; color: var(--blue-dark); margin-bottom: 6px; }
+  .card p.sub { color: var(--gray); font-size: 0.9rem; margin-bottom: 16px; }
+
+  /* ── PROGRESS ── */
+  .prog-bar-outer { background: #e9ecef; border-radius: 999px; height: 10px; margin: 6px 0 14px; }
+  .prog-bar-inner { height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--blue), #00c6ff); transition: width 0.4s; }
+
+  /* ── FLASHCARDS ── */
+  #flashcard-area { perspective: 800px; }
+  .fc-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .fc { width: 100%; max-width: 560px; height: 200px; cursor: pointer; perspective: 800px; }
+  .fc-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s; border-radius: var(--radius); }
+  .fc.flipped .fc-inner { transform: rotateY(180deg); }
+  .fc-front, .fc-back { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; border-radius: var(--radius); backface-visibility: hidden; text-align: center; }
+  .fc-front { background: linear-gradient(135deg, var(--blue), #00c6ff); color: #fff; font-size: 1.05rem; font-weight: 600; box-shadow: var(--shadow); }
+  .fc-back { background: linear-gradient(135deg, #1e7e34, #43e97b); color: #fff; font-size: 0.97rem; transform: rotateY(180deg); box-shadow: var(--shadow); }
+  .fc-hint { font-size: 0.78rem; color: rgba(255,255,255,0.7); margin-top: 10px; }
+  .fc-nav { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .fc-nav button { padding: 9px 22px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+  .fc-prev { background: #e9ecef; color: #333; }
+  .fc-prev:hover { background: #d0d4d8; }
+  .fc-next { background: var(--blue); color: #fff; }
+  .fc-next:hover { background: var(--blue-dark); }
+  .fc-shuffle { background: var(--orange); color: #fff; }
+  .fc-shuffle:hover { background: #c0651a; }
+  #fc-counter { font-size: 0.9rem; color: var(--gray); }
+  .topic-badge { display: inline-block; background: var(--blue-light); color: var(--blue-dark); border-radius: 999px; padding: 2px 12px; font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; }
+
+  /* ── MATCHING ── */
+  .match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .match-col { display: flex; flex-direction: column; gap: 8px; }
+  .match-item { padding: 10px 14px; border-radius: 8px; border: 2px solid var(--gray-border); cursor: pointer; font-size: 0.9rem; transition: all 0.2s; background: #fff; user-select: none; }
+  .match-item:hover { border-color: var(--blue); background: var(--blue-light); }
+  .match-item.selected { border-color: var(--blue); background: var(--blue-light); font-weight: 600; }
+  .match-item.matched { border-color: var(--green-bg); background: var(--green-light); color: var(--green); cursor: default; font-weight: 600; }
+  .match-item.wrong { border-color: var(--red); background: var(--red-light); animation: shake 0.3s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .match-status { margin-top: 12px; font-size: 0.9rem; font-weight: 600; }
+  .match-score { color: var(--blue-dark); }
+
+  /* ── FILL IN THE BLANK ── */
+  .fitb-q { margin-bottom: 18px; padding: 14px 16px; border-radius: 8px; border-left: 4px solid var(--blue); background: var(--gray-light); }
+  .fitb-q p { font-size: 0.95rem; margin-bottom: 8px; line-height: 1.6; }
+  .fitb-q input { border: 2px solid var(--gray-border); border-radius: 6px; padding: 6px 12px; font-size: 0.92rem; width: 220px; transition: border-color 0.2s; }
+  .fitb-q input:focus { outline: none; border-color: var(--blue); }
+  .fitb-q input.correct { border-color: var(--green-bg); background: var(--green-light); }
+  .fitb-q input.wrong { border-color: var(--red); background: var(--red-light); }
+  .fitb-q .feedback { font-size: 0.82rem; margin-top: 4px; font-weight: 600; }
+  .fitb-q .feedback.ok { color: var(--green); }
+  .fitb-q .feedback.err { color: var(--red); }
+  .check-btn { background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 10px 28px; cursor: pointer; font-size: 0.95rem; margin-top: 4px; transition: background 0.2s; }
+  .check-btn:hover { background: var(--blue-dark); }
+  .reset-btn { background: #e9ecef; color: #333; border: none; border-radius: 8px; padding: 10px 22px; cursor: pointer; font-size: 0.9rem; margin-left: 10px; transition: background 0.2s; }
+  .reset-btn:hover { background: #d0d4d8; }
+
+  /* ── SORT/CATEGORIZE ── */
+  .sort-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .sort-col { background: var(--gray-light); border-radius: var(--radius); padding: 14px; min-height: 200px; }
+  .sort-col h3 { font-size: 0.95rem; font-weight: 700; color: #fff; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; text-align: center; }
+  .sort-col.primary h3 { background: var(--orange); }
+  .sort-col.secondary h3 { background: var(--blue); }
+  .sort-col.tertiary h3 { background: var(--purple); }
+  .sort-bank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
+  .sort-chip { background: #fff; border: 2px solid var(--gray-border); border-radius: 999px; padding: 6px 14px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+  .sort-chip:hover { border-color: var(--blue); background: var(--blue-light); }
+  .sort-chip.placed { opacity: 0.4; pointer-events: none; }
+  .sort-drop { min-height: 120px; border: 2px dashed var(--gray-border); border-radius: 8px; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+  .sort-drop .sort-chip { background: #fff; cursor: pointer; }
+  .sort-drop .sort-chip.correct-placed { border-color: var(--green-bg); color: var(--green); }
+  .sort-drop .sort-chip.wrong-placed { border-color: var(--red); color: var(--red); }
+  .sort-result { margin-top: 12px; font-size: 0.92rem; font-weight: 600; }
+
+  /* ── TRUE/FALSE ── */
+  .tf-q { padding: 14px 16px; border-radius: 8px; border: 2px solid var(--gray-border); background: #fff; margin-bottom: 12px; }
+  .tf-q p { font-size: 0.95rem; margin-bottom: 10px; }
+  .tf-btns { display: flex; gap: 10px; }
+  .tf-btn { padding: 7px 20px; border: 2px solid var(--gray-border); border-radius: 6px; cursor: pointer; font-size: 0.88rem; background: #fff; transition: all 0.2s; }
+  .tf-btn:hover { background: var(--gray-light); }
+  .tf-btn.selected-true { border-color: var(--green-bg); background: var(--green-light); color: var(--green); font-weight: 700; }
+  .tf-btn.selected-false { border-color: var(--red); background: var(--red-light); color: var(--red); font-weight: 700; }
+  .tf-result { font-size: 0.82rem; margin-top: 6px; font-weight: 600; }
+  .tf-result.ok { color: var(--green); }
+  .tf-result.err { color: var(--red); }
+
+  /* ── GLOSSARY ── */
+  .gloss-search { width: 100%; padding: 10px 14px; border: 2px solid var(--gray-border); border-radius: 8px; font-size: 0.95rem; margin-bottom: 14px; }
+  .gloss-search:focus { outline: none; border-color: var(--blue); }
+  .gloss-item { padding: 10px 14px; border-bottom: 1px solid var(--gray-border); }
+  .gloss-item:last-child { border-bottom: none; }
+  .gloss-term { font-weight: 700; color: var(--blue-dark); font-size: 0.95rem; }
+  .gloss-def { font-size: 0.88rem; color: #555; margin-top: 2px; }
+  .gloss-topic { display: inline-block; font-size: 0.72rem; padding: 1px 8px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
+  .tag-urb { background: #d6e8f7; color: #1a4d7a; }
+  .tag-ind { background: #d4edda; color: #155724; }
+  .tag-nat { background: #fdebd0; color: #7d3c00; }
+  .tag-pop { background: #e8e0f7; color: #4a235a; }
+  .tag-imm { background: #fce4ec; color: #880e2f; }
+  .tag-cli { background: #fff3cd; color: #856404; }
+
+  /* ── SCORE BADGE ── */
+  .score-badge { display: inline-block; background: var(--blue); color: #fff; border-radius: 999px; padding: 4px 14px; font-size: 0.85rem; font-weight: 700; margin-top: 8px; }
+
+  /* ── UTILITY ── */
+  h1 { font-size: 1.6rem; color: var(--blue-dark); margin-bottom: 4px; }
+  h3 { font-size: 1.05rem; color: var(--blue-dark); margin-bottom: 10px; }
+  .banner { background: linear-gradient(135deg, var(--blue-dark), var(--blue)); color: #fff; border-radius: var(--radius); padding: 22px 26px; margin-bottom: 20px; }
+  .banner h1 { color: #fff; font-size: 1.7rem; }
+  .banner p { color: rgba(255,255,255,0.85); margin-top: 6px; font-size: 0.95rem; }
+  .topic-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .pill { background: rgba(255,255,255,0.2); color: #fff; border-radius: 999px; padding: 4px 14px; font-size: 0.82rem; font-weight: 600; }
+  .activity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 4px; }
+  .activity-card { background: #fff; border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border-top: 4px solid var(--blue); }
+  .activity-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+  .activity-card .icon { font-size: 2rem; margin-bottom: 8px; }
+  .activity-card h3 { font-size: 0.95rem; margin-bottom: 4px; }
+  .activity-card p { font-size: 0.8rem; color: var(--gray); }
+  .btn { padding: 9px 22px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue:hover { background: var(--blue-dark); }
+  .btn-green { background: var(--green-bg); color: #fff; }
+  .btn-green:hover { background: var(--green); }
+  .btn-gray { background: #e9ecef; color: #333; }
+  .btn-gray:hover { background: #d0d4d8; }
+  .flex-gap { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">📚 Geography Study</div>
+  <button class="active" onclick="showSection('home')">🏠 Home</button>
+  <button onclick="showSection('flashcards')">🃏 Flashcards</button>
+  <button onclick="showSection('matching')">🔗 Matching</button>
+  <button onclick="showSection('fillblank')">✏️ Fill in the Blank</button>
+  <button onclick="showSection('sorting')">🗂️ Sort Industries</button>
+  <button onclick="showSection('truefalse')">✅ True or False</button>
+  <button onclick="showSection('glossary')">📖 Glossary</button>
+</nav>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<div id="home" class="section active">
+  <div class="banner">
+    <h1>🌍 Geography Interactive Study Worksheet</h1>
+    <p>Six activities to help you master all five exam topics. Work through them all to prepare for your quiz!</p>
+    <div class="topic-pills">
+      <span class="pill">🏙️ Urbanization</span>
+      <span class="pill">🏭 Types of Industry</span>
+      <span class="pill">🌲 Natural Resources</span>
+      <span class="pill">📊 Population Pyramids</span>
+      <span class="pill">✈️ Immigration</span>
+      <span class="pill">🌡️ Climate Change</span>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Choose an Activity</h2>
+    <p class="sub">Each activity targets different learning styles. Try them all!</p>
+    <div class="activity-grid">
+      <div class="activity-card" onclick="showSection('flashcards')">
+        <div class="icon">🃏</div><h3>Flashcards</h3><p>Flip through 40 key terms and definitions</p>
+      </div>
+      <div class="activity-card" onclick="showSection('matching')">
+        <div class="icon">🔗</div><h3>Matching</h3><p>Match terms to their correct definitions</p>
+      </div>
+      <div class="activity-card" onclick="showSection('fillblank')">
+        <div class="icon">✏️</div><h3>Fill in the Blank</h3><p>Complete 20 sentences from your notes</p>
+      </div>
+      <div class="activity-card" onclick="showSection('sorting')">
+        <div class="icon">🗂️</div><h3>Sort Industries</h3><p>Drag jobs into Primary / Secondary / Tertiary</p>
+      </div>
+      <div class="activity-card" onclick="showSection('truefalse')">
+        <div class="icon">✅</div><h3>True or False</h3><p>Test your knowledge with 20 statements</p>
+      </div>
+      <div class="activity-card" onclick="showSection('glossary')">
+        <div class="icon">📖</div><h3>Glossary</h3><p>Browse and search all key vocabulary</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FLASHCARDS ═══════════════ -->
+<div id="flashcards" class="section">
+  <div class="card">
+    <h2>🃏 Flashcards</h2>
+    <p class="sub">Click a card to flip it and reveal the answer. Use the arrows to navigate.</p>
+    <div class="prog-bar-outer"><div class="prog-bar-inner" id="fc-prog" style="width:0%"></div></div>
+    <div class="fc-wrap">
+      <span id="fc-counter">Card 1 of 40</span>
+      <div class="fc" id="fc-card" onclick="flipCard()">
+        <div class="fc-inner">
+          <div class="fc-front">
+            <div>
+              <div class="topic-badge" id="fc-topic">Topic</div>
+              <div id="fc-q">Loading...</div>
+              <div class="fc-hint">Click to reveal answer</div>
+            </div>
+          </div>
+          <div class="fc-back">
+            <div id="fc-a">Answer</div>
+          </div>
+        </div>
+      </div>
+      <div class="fc-nav">
+        <button class="fc-prev btn btn-gray" onclick="fcNav(-1)">◀ Previous</button>
+        <button class="fc-shuffle btn fc-shuffle" onclick="shuffleCards()">🔀 Shuffle</button>
+        <button class="fc-next btn btn-blue" onclick="fcNav(1)">Next ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MATCHING ═══════════════ -->
+<div id="matching" class="section">
+  <div class="card">
+    <h2>🔗 Term Matching</h2>
+    <p class="sub">Click a term on the left, then click its matching definition on the right.</p>
+    <div class="prog-bar-outer"><div class="prog-bar-inner" id="match-prog" style="width:0%"></div></div>
+    <div class="match-status"><span class="match-score" id="match-score">✅ 0 / 10 matched</span></div>
+    <br>
+    <div class="match-grid" id="match-grid"></div>
+    <div class="flex-gap">
+      <button class="btn btn-blue" onclick="initMatching()">🔀 New Round</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FILL IN THE BLANK ═══════════════ -->
+<div id="fillblank" class="section">
+  <div class="card">
+    <h2>✏️ Fill in the Blank</h2>
+    <p class="sub">Type the missing word(s) in each gap. Spelling does not need to be perfect.</p>
+    <div id="fitb-questions"></div>
+    <div class="flex-gap">
+      <button class="check-btn" onclick="checkFITB()">Check Answers</button>
+      <button class="reset-btn" onclick="resetFITB()">Reset</button>
+      <span id="fitb-score" class="score-badge" style="display:none"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SORTING ═══════════════ -->
+<div id="sorting" class="section">
+  <div class="card">
+    <h2>🗂️ Sort the Industries</h2>
+    <p class="sub">Click each job/activity below, then click the correct industry column to place it.</p>
+    <div class="sort-bank" id="sort-bank"></div>
+    <div class="sort-grid">
+      <div class="sort-col primary">
+        <h3>🌾 Primary (~4%)<br><small style="font-weight:400;font-size:0.75rem">Raw materials from nature</small></h3>
+        <div class="sort-drop" id="drop-primary" onclick="dropItem('primary')"></div>
+      </div>
+      <div class="sort-col secondary">
+        <h3>🏭 Secondary (~22%)<br><small style="font-weight:400;font-size:0.75rem">Making finished goods</small></h3>
+        <div class="sort-drop" id="drop-secondary" onclick="dropItem('secondary')"></div>
+      </div>
+      <div class="sort-col tertiary">
+        <h3>🤝 Tertiary (~74%)<br><small style="font-weight:400;font-size:0.75rem">Providing services</small></h3>
+        <div class="sort-drop" id="drop-tertiary" onclick="dropItem('tertiary')"></div>
+      </div>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-blue" onclick="checkSort()">Check Answers</button>
+      <button class="btn btn-gray" onclick="initSort()">Reset</button>
+      <span class="sort-result" id="sort-result"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TRUE/FALSE ═══════════════ -->
+<div id="truefalse" class="section">
+  <div class="card">
+    <h2>✅ True or False</h2>
+    <p class="sub">Read each statement and decide if it is TRUE or FALSE.</p>
+    <div class="prog-bar-outer"><div class="prog-bar-inner" id="tf-prog" style="width:0%"></div></div>
+    <div id="tf-questions"></div>
+    <div class="flex-gap">
+      <button class="btn btn-blue" onclick="checkTF()">Check All Answers</button>
+      <button class="btn btn-gray" onclick="resetTF()">Reset</button>
+      <span id="tf-score" class="score-badge" style="display:none"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ GLOSSARY ═══════════════ -->
+<div id="glossary" class="section">
+  <div class="card">
+    <h2>📖 Key Vocabulary Glossary</h2>
+    <p class="sub">Search for any term or browse all definitions.</p>
+    <input type="text" class="gloss-search" placeholder="🔍 Search terms..." oninput="filterGloss(this.value)" id="gloss-search">
+    <div id="gloss-list"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════ DATA ══════════════════════════ */
+const flashcards = [
+  // Urbanization
+  {t:"Urbanization",a:"The process of a population moving from rural countryside locations to urban cities to live and work.",topic:"Urbanization"},
+  {t:"Urban",a:"Densely populated communities such as towns and cities.",topic:"Urbanization"},
+  {t:"Rural",a:"Lowly populated communities such as villages and farming communities where people live great distances apart.",topic:"Urbanization"},
+  {t:"Ecumene",a:"A Greek term meaning 'inhabited world' — the location where most Canadians live (southern Canada, within 600 km of the US border).",topic:"Urbanization"},
+  {t:"Central Business District (CBD)",a:"The downtown area of a city where goods and services are bought and sold.",topic:"Urbanization"},
+  {t:"Urban Sprawl",a:"When cities expand onto surrounding areas such as farmland (new housing developments).",topic:"Urbanization"},
+  {t:"Urban Renewal",a:"When older parts of a city are rebuilt and converted into new types of land use.",topic:"Urbanization"},
+  {t:"90% of Canadians live in ___% of Canada's land.",a:"10% — specifically within 600 km of the US border.",topic:"Urbanization"},
+  // Industry
+  {t:"Primary Industry",a:"Industries that take raw materials from the natural environment (e.g., agriculture, mining, forestry, fishing). About 4% of Canada's workforce.",topic:"Industry"},
+  {t:"Secondary Industry",a:"Industries that process primary products into finished goods. The most important phase is manufacturing. About 22% of Canada's workforce.",topic:"Industry"},
+  {t:"Tertiary Industry",a:"Industries that provide services to other industries and the public (e.g., banking, teaching, healthcare). About 74% of Canada's workforce.",topic:"Industry"},
+  {t:"Primary Manufacturing",a:"Combining raw materials to make a base product — e.g., iron + ore + coal + limestone → steel.",topic:"Industry"},
+  {t:"Secondary Manufacturing",a:"Using a base product to make a finished product — e.g., steel → car.",topic:"Industry"},
+  {t:"Basic Industry",a:"An industry that receives money from OUTSIDE the town/city.",topic:"Industry"},
+  {t:"Non-basic Industry",a:"An industry that receives money from INSIDE the town/city.",topic:"Industry"},
+  // Natural Resources
+  {t:"Natural Resource",a:"Things that occur from the earth — animals, plants, water, soils, minerals, the sun.",topic:"Natural Resources"},
+  {t:"Human Resource",a:"Human-made resources, such as planes, machines, and tools.",topic:"Natural Resources"},
+  {t:"Pencil shaft material",a:"Wood (a natural resource from trees).",topic:"Natural Resources"},
+  {t:"Pencil writing part material",a:"Graphite (a natural mineral).",topic:"Natural Resources"},
+  {t:"Pencil eraser holder material",a:"Aluminum (a mineral).",topic:"Natural Resources"},
+  // Population Pyramids
+  {t:"Population Pyramid",a:"A paired horizontal bar graph showing the make-up of a population by age and gender (as percentages).",topic:"Population"},
+  {t:"Dependency Ratio",a:"The part of the population that needs to be supported — made up of the young (0–14) and elderly (65+) age groups.",topic:"Population"},
+  {t:"Young Dependants",a:"People aged 0–14 who are part of the dependency ratio.",topic:"Population"},
+  {t:"Elderly Dependants",a:"People aged 65+ who are part of the dependency ratio.",topic:"Population"},
+  {t:"Wide base on population pyramid means...",a:"A high birth rate / large young population.",topic:"Population"},
+  {t:"Wide top on population pyramid means...",a:"A large elderly population / aging society.",topic:"Population"},
+  // Immigration
+  {t:"Immigration",a:"The movement of people INTO another country with the intent of staying.",topic:"Immigration"},
+  {t:"Emigration",a:"The movement of people OUT of their home country to another country.",topic:"Immigration"},
+  {t:"Push Factor",a:"A reason that makes you want to LEAVE your country (e.g., war, famine, political persecution, natural disaster).",topic:"Immigration"},
+  {t:"Pull Factor",a:"A reason that ATTRACTS you to move to a new country (e.g., family, better jobs, religious freedom).",topic:"Immigration"},
+  {t:"Economic Immigrant",a:"An immigrant assessed using the point system. Skilled Workers need 67/100 points.",topic:"Immigration"},
+  {t:"Family Class Immigrant",a:"An immigrant reuniting with family already in Canada. No point system — must be sponsored.",topic:"Immigration"},
+  {t:"Refugee",a:"A person fleeing cruel, inhumane treatment or death in their home country. No points required.",topic:"Immigration"},
+  {t:"Multiculturalism",a:"The presence and support for several different cultural groups within a society.",topic:"Immigration"},
+  {t:"Cultural Mosaic vs Melting Pot",a:"Canada = Mosaic (cultures coexist). USA = Melting Pot (cultures blend into one).",topic:"Immigration"},
+  {t:"Cultural Baggage",a:"The cultural traditions and ways of living that a new Canadian brings from their previous home country (food, clothing, language, traditions, religion).",topic:"Immigration"},
+  {t:"HRDC",a:"Human Resources Development Canada — the government body that approves job offers for immigrants.",topic:"Immigration"},
+  // Climate
+  {t:"Clean/Renewable Energy Examples",a:"Solar, wind, hydro, wave/tidal, nuclear, geothermal, biomass.",topic:"Climate"},
+  {t:"3 Rs Strategy",a:"Reduce, Reuse, Recycle — ways to lower your ecological footprint.",topic:"Climate"},
+  {t:"Ecological Footprint",a:"A measure of the impact a person or population has on the environment.",topic:"Climate"},
+];
+
+const matchPairs = [
+  ["Urbanization","Moving from rural to urban areas to live and work"],
+  ["Ecumene","The inhabited world — where most Canadians live"],
+  ["CBD","The downtown commercial area of a city"],
+  ["Urban Sprawl","Cities expanding onto surrounding farmland"],
+  ["Primary Industry","Taking raw materials from the natural environment"],
+  ["Secondary Industry","Processing raw materials into finished goods"],
+  ["Tertiary Industry","Providing services to industries and the public"],
+  ["Dependency Ratio","Young + elderly groups that need to be supported"],
+  ["Push Factor","A reason that makes you want to LEAVE your country"],
+  ["Multiculturalism","Support for several cultural groups within one society"],
+  ["Cultural Baggage","Traditions and customs a new immigrant brings"],
+  ["Refugee","Someone fleeing cruel treatment in their home country"],
+  ["Urban Renewal","Rebuilding older city areas into new land uses"],
+  ["Basic Industry","Receives money from OUTSIDE the town/city"],
+  ["Natural Resource","Things from the earth — animals, plants, minerals, water"],
+  ["Population Pyramid","Paired horizontal bar graph showing age and gender data"],
+];
+
+const fitbQuestions = [
+  {text:"In the early 1900s, only {37%} of Canadians lived in urban areas.",answer:"37%",alt:["37","37 percent"]},
+  {text:"Today, {80%} of Canadians live in urban places.",answer:"80%",alt:["80","80 percent"]},
+  {text:"{Ecumene} is a Greek term meaning 'inhabited world'.",answer:"Ecumene",alt:["ecumene","the ecumene"]},
+  {text:"The downtown commercial area of a city is called the Central Business District, or {CBD}.",answer:"CBD",alt:["cbd","central business district"]},
+  {text:"When cities expand onto surrounding farmland, it is called {Urban Sprawl}.",answer:"Urban Sprawl",alt:["urban sprawl","sprawl"]},
+  {text:"{90%} of Canadians live in only 10% of Canada's land area.",answer:"90%",alt:["90","90 percent"]},
+  {text:"Primary industries employ about {4%} of Canada's workforce.",answer:"4%",alt:["4","four percent"]},
+  {text:"The most important type of secondary industry is {manufacturing}.",answer:"manufacturing",alt:["manufacturing"]},
+  {text:"About {74%} of Canadians work in the tertiary sector.",answer:"74%",alt:["74","74 percent"]},
+  {text:"A {basic} industry receives money from outside the town or city.",answer:"basic",alt:["basic industry"]},
+  {text:"Immigration is the movement of people {into} another country with the intent of staying.",answer:"into",alt:["in","to"]},
+  {text:"Skilled Worker immigrants must score at least {67} out of 100 points to qualify.",answer:"67",alt:["67 points","67/100"]},
+  {text:"War, famine, and political persecution are examples of {push} factors.",answer:"push",alt:["push factors","push factor"]},
+  {text:"Better jobs, family in Canada, and religious freedom are examples of {pull} factors.",answer:"pull",alt:["pull factors","pull factor"]},
+  {text:"Canada's multicultural policy describes the country as a cultural {mosaic}, not a melting pot.",answer:"mosaic",alt:["cultural mosaic"]},
+  {text:"A population pyramid is a paired horizontal {bar} graph.",answer:"bar",alt:["bar graph"]},
+  {text:"The {dependency} ratio includes young people (0–14) and the elderly (65+).",answer:"dependency",alt:["dependency ratio"]},
+  {text:"The eraser holder on a pencil is made from {aluminum}.",answer:"aluminum",alt:["aluminium","minerals"]},
+  {text:"Solar, wind, and hydro are examples of {clean} or renewable energy sources.",answer:"clean",alt:["renewable","green"]},
+  {text:"The {3 Rs} strategy stands for Reduce, Reuse, Recycle.",answer:"3 Rs",alt:["three rs","3rs","3 r's"]},
+];
+
+const sortItems = [
+  {label:"Mining",correct:"primary"},{label:"Farming",correct:"primary"},{label:"Forestry",correct:"primary"},
+  {label:"Fishing",correct:"primary"},{label:"Gravel Extraction",correct:"primary"},
+  {label:"Car Factory",correct:"secondary"},{label:"Textbook Factory",correct:"secondary"},
+  {label:"Steel Production",correct:"secondary"},{label:"Lumber Mill",correct:"secondary"},
+  {label:"Maple Syrup Processing",correct:"secondary"},
+  {label:"Teacher",correct:"tertiary"},{label:"Banker",correct:"tertiary"},
+  {label:"Doctor",correct:"tertiary"},{label:"Police Officer",correct:"tertiary"},
+  {label:"Taxi Driver",correct:"tertiary"},{label:"Lawyer",correct:"tertiary"},
+  {label:"Hair Dresser",correct:"tertiary"},{label:"Restaurant",correct:"tertiary"},
+];
+
+const tfQuestions = [
+  {s:"In the early 1900s, 80% of Canadians lived in urban areas.",correct:false},
+  {s:"Today, 80% of Canadians live in urban areas.",correct:true},
+  {s:"Ecumene means 'uninhabited world'.",correct:false},
+  {s:"90% of Canadians live within 600 km of the US border.",correct:true},
+  {s:"Urban sprawl is when older city areas are rebuilt into new land uses.",correct:false},
+  {s:"The CBD is the downtown commercial area of a city.",correct:true},
+  {s:"Primary industries employ about 74% of Canada's workforce.",correct:false},
+  {s:"Tertiary industries provide services to the public and other industries.",correct:true},
+  {s:"A basic industry receives money from OUTSIDE the town/city.",correct:true},
+  {s:"Immigration means moving OUT of your country permanently.",correct:false},
+  {s:"There are 3 categories of immigrants in Canada: Economic, Family, and Refugee.",correct:true},
+  {s:"Skilled Worker immigrants need 67 out of 100 points to qualify.",correct:true},
+  {s:"Push factors are reasons that ATTRACT you to a new country.",correct:false},
+  {s:"Canada is described as a 'cultural mosaic'.",correct:true},
+  {s:"Cultural baggage refers to excess luggage at the airport.",correct:false},
+  {s:"A population pyramid shows population by age and gender.",correct:true},
+  {s:"A wide base on a population pyramid indicates a large elderly population.",correct:false},
+  {s:"The dependency ratio includes young people (0-14) and the elderly (65+).",correct:true},
+  {s:"Solar, wind, and geothermal are examples of clean energy sources.",correct:true},
+  {s:"Deforestation helps reduce climate change.",correct:false},
+];
+
+const glossary = [
+  {term:"Urbanization",def:"Process of population moving from rural countryside to urban cities.",topic:"Urbanization",tag:"tag-urb"},
+  {term:"Urban",def:"Densely populated communities such as towns and cities.",topic:"Urbanization",tag:"tag-urb"},
+  {term:"Rural",def:"Lowly populated communities (villages, farming areas) where people live far apart.",topic:"Urbanization",tag:"tag-urb"},
+  {term:"Ecumene",def:"Greek term for 'inhabited world' — where most Canadians live (within 600 km of US border).",topic:"Urbanization",tag:"tag-urb"},
+  {term:"Central Business District (CBD)",def:"The downtown area where goods and services are bought and sold.",topic:"Urbanization",tag:"tag-urb"},
+  {term:"Urban Sprawl",def:"Cities expanding onto surrounding farmland and countryside.",topic:"Urbanization",tag:"tag-urb"},
+  {term:"Urban Renewal",def:"Rebuilding older parts of a city into new types of land use.",topic:"Urbanization",tag:"tag-urb"},
+  {term:"Primary Industry",def:"Extractive industries taking raw materials from nature (agriculture, mining, forestry, fishing). ~4% of workforce.",topic:"Industry",tag:"tag-ind"},
+  {term:"Secondary Industry",def:"Processing raw materials into finished goods (manufacturing). ~22% of workforce.",topic:"Industry",tag:"tag-ind"},
+  {term:"Tertiary Industry",def:"Service industries (banking, teaching, healthcare). ~74% of workforce.",topic:"Industry",tag:"tag-ind"},
+  {term:"Primary Manufacturing",def:"Combining raw materials into a base product (e.g., iron + coal → steel).",topic:"Industry",tag:"tag-ind"},
+  {term:"Secondary Manufacturing",def:"Using a base product to make a finished product (e.g., steel → car).",topic:"Industry",tag:"tag-ind"},
+  {term:"Basic Industry",def:"Receives money from OUTSIDE the town/city.",topic:"Industry",tag:"tag-ind"},
+  {term:"Non-basic Industry",def:"Receives money from INSIDE the town/city.",topic:"Industry",tag:"tag-ind"},
+  {term:"Natural Resource",def:"Things from the earth — animals, plants, water, soils, minerals, the sun.",topic:"Natural Resources",tag:"tag-nat"},
+  {term:"Human Resource",def:"Human-made resources (planes, machines, tools).",topic:"Natural Resources",tag:"tag-nat"},
+  {term:"Population Pyramid",def:"Paired horizontal bar graph showing population by age and gender (%).",topic:"Population Pyramids",tag:"tag-pop"},
+  {term:"Dependency Ratio",def:"The part of the population needing support — young (0–14) + elderly (65+).",topic:"Population Pyramids",tag:"tag-pop"},
+  {term:"Immigration",def:"Moving INTO another country with intent to stay.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Emigration",def:"Moving OUT of your home country to another country.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Push Factor",def:"A reason that makes you want to LEAVE your country (war, famine, persecution).",topic:"Immigration",tag:"tag-imm"},
+  {term:"Pull Factor",def:"A reason that ATTRACTS you to move to a new country (family, jobs, freedom).",topic:"Immigration",tag:"tag-imm"},
+  {term:"Economic Immigrant",def:"Assessed using the point system; Skilled Workers need 67/100 points.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Family Class Immigrant",def:"Reuniting with family already in Canada; must be sponsored.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Refugee",def:"Someone fleeing cruel, inhumane treatment in their home country.",topic:"Immigration",tag:"tag-imm"},
+  {term:"HRDC",def:"Human Resources Development Canada — approves job offers for immigrants.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Multiculturalism",def:"The presence and support for several cultural groups within one society.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Cultural Mosaic",def:"Canada's model — cultures coexist and maintain their identity.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Melting Pot",def:"A model (e.g., USA) where cultures blend into one dominant culture.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Cultural Baggage",def:"The cultural traditions and customs a new immigrant brings from home.",topic:"Immigration",tag:"tag-imm"},
+  {term:"Ecological Footprint",def:"A measure of a person's or population's impact on the environment.",topic:"Climate Change",tag:"tag-cli"},
+  {term:"Renewable Energy",def:"Clean energy sources: solar, wind, hydro, tidal, geothermal, biomass, nuclear.",topic:"Climate Change",tag:"tag-cli"},
+  {term:"3 Rs",def:"Reduce, Reuse, Recycle — strategies to lower environmental impact.",topic:"Climate Change",tag:"tag-cli"},
+];
+
+/* ══════════════════════════ NAVIGATION ══════════════════════════ */
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const navBtns = document.querySelectorAll('nav button');
+  navBtns.forEach(b => { if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(id)) b.classList.add('active'); });
+}
+
+/* ══════════════════════════ FLASHCARDS ══════════════════════════ */
+let fcIndex = 0, fcCards = [...flashcards], fcFlipped = false;
+function renderCard() {
+  const card = fcCards[fcIndex];
+  document.getElementById('fc-q').textContent = card.t;
+  document.getElementById('fc-a').textContent = card.a;
+  document.getElementById('fc-topic').textContent = card.topic;
+  document.getElementById('fc-counter').textContent = `Card ${fcIndex + 1} of ${fcCards.length}`;
+  document.getElementById('fc-prog').style.width = ((fcIndex + 1) / fcCards.length * 100) + '%';
+  const el = document.getElementById('fc-card');
+  el.classList.remove('flipped');
+  fcFlipped = false;
+}
+function flipCard() {
+  document.getElementById('fc-card').classList.toggle('flipped');
+  fcFlipped = !fcFlipped;
+}
+function fcNav(dir) {
+  fcIndex = (fcIndex + dir + fcCards.length) % fcCards.length;
+  renderCard();
+}
+function shuffleCards() {
+  fcCards = [...fcCards].sort(() => Math.random() - 0.5);
+  fcIndex = 0; renderCard();
+}
+renderCard();
+
+/* ══════════════════════════ MATCHING ══════════════════════════ */
+let matchSelected = null, matchScore = 0;
+function initMatching() {
+  matchSelected = null; matchScore = 0;
+  const pool = [...matchPairs].sort(() => Math.random() - 0.5).slice(0, 10);
+  const terms = [...pool].sort(() => Math.random() - 0.5);
+  const defs = [...pool].sort(() => Math.random() - 0.5);
+  const grid = document.getElementById('match-grid');
+  grid.innerHTML = '<div class="match-col" id="match-terms"></div><div class="match-col" id="match-defs"></div>';
+  terms.forEach(([term]) => {
+    const el = document.createElement('div');
+    el.className = 'match-item'; el.dataset.term = term; el.textContent = term;
+    el.onclick = () => selectMatch(el, 'term');
+    document.getElementById('match-terms').appendChild(el);
+  });
+  defs.forEach(([, def]) => {
+    const el = document.createElement('div');
+    el.className = 'match-item'; el.dataset.def = def; el.textContent = def;
+    el.onclick = () => selectMatch(el, 'def');
+    document.getElementById('match-defs').appendChild(el);
+  });
+  document.getElementById('match-score').textContent = '✅ 0 / 10 matched';
+  document.getElementById('match-prog').style.width = '0%';
+}
+function selectMatch(el, type) {
+  if (el.classList.contains('matched')) return;
+  if (!matchSelected) {
+    document.querySelectorAll('.match-item.selected').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected'); matchSelected = {el, type};
+  } else if (matchSelected.type === type) {
+    document.querySelectorAll('.match-item.selected').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected'); matchSelected = {el, type};
+  } else {
+    const termEl = type === 'def' ? matchSelected.el : el;
+    const defEl = type === 'def' ? el : matchSelected.el;
+    const term = termEl.dataset.term;
+    const def = defEl.dataset.def;
+    const pair = matchPairs.find(([t]) => t === term);
+    if (pair && pair[1] === def) {
+      termEl.classList.add('matched'); defEl.classList.add('matched');
+      matchScore++;
+      document.getElementById('match-score').textContent = `✅ ${matchScore} / 10 matched`;
+      document.getElementById('match-prog').style.width = (matchScore / 10 * 100) + '%';
+    } else {
+      termEl.classList.add('wrong'); defEl.classList.add('wrong');
+      setTimeout(() => { termEl.classList.remove('wrong','selected'); defEl.classList.remove('wrong','selected'); }, 700);
+    }
+    matchSelected = null;
+  }
+}
+initMatching();
+
+/* ══════════════════════════ FILL IN THE BLANK ══════════════════════════ */
+function initFITB() {
+  const container = document.getElementById('fitb-questions');
+  container.innerHTML = '';
+  fitbQuestions.forEach((q, i) => {
+    const display = q.text.replace(/\{[^}]+\}/g, '<input type="text" id="fitb-'+i+'" placeholder="...">');
+    const div = document.createElement('div');
+    div.className = 'fitb-q';
+    div.innerHTML = `<p><strong>Q${i+1}.</strong> ${display}</p><div class="feedback" id="fb-${i}"></div>`;
+    container.appendChild(div);
+  });
+  document.getElementById('fitb-score').style.display = 'none';
+}
+function normalize(s) { return s.toLowerCase().trim().replace(/[^a-z0-9%]/g,''); }
+function checkFITB() {
+  let correct = 0;
+  fitbQuestions.forEach((q, i) => {
+    const input = document.getElementById('fitb-' + i);
+    const fb = document.getElementById('fb-' + i);
+    if (!input) return;
+    const val = input.value;
+    const allAnswers = [q.answer, ...(q.alt||[])];
+    const ok = allAnswers.some(a => normalize(val) === normalize(a));
+    input.className = ok ? 'correct' : 'wrong';
+    if (ok) { fb.className = 'feedback ok'; fb.textContent = '✓ Correct!'; correct++; }
+    else { fb.className = 'feedback err'; fb.textContent = `✗ Answer: ${q.answer}`; }
+  });
+  const score = document.getElementById('fitb-score');
+  score.style.display = 'inline-block';
+  score.textContent = `Score: ${correct} / ${fitbQuestions.length}`;
+}
+function resetFITB() { initFITB(); }
+initFITB();
+
+/* ══════════════════════════ SORTING ══════════════════════════ */
+let sortSelected = null;
+function initSort() {
+  sortSelected = null;
+  ['primary','secondary','tertiary'].forEach(cat => { document.getElementById('drop-'+cat).innerHTML = ''; });
+  const bank = document.getElementById('sort-bank');
+  bank.innerHTML = '';
+  const shuffled = [...sortItems].sort(() => Math.random() - 0.5);
+  shuffled.forEach(item => {
+    const chip = document.createElement('div');
+    chip.className = 'sort-chip'; chip.textContent = item.label; chip.dataset.correct = item.correct;
+    chip.onclick = () => {
+      document.querySelectorAll('.sort-chip.selected-bank').forEach(c => c.classList.remove('selected-bank'));
+      chip.classList.add('selected-bank');
+      sortSelected = chip;
+    };
+    bank.appendChild(chip);
+  });
+  document.getElementById('sort-result').textContent = '';
+}
+function dropItem(cat) {
+  if (!sortSelected || sortSelected.classList.contains('placed')) return;
+  const drop = document.getElementById('drop-' + cat);
+  const clone = sortSelected.cloneNode(true);
+  clone.classList.remove('selected-bank');
+  clone.dataset.placed = cat;
+  clone.onclick = () => {
+    clone.remove();
+    sortSelected.classList.remove('placed','selected-bank');
+    sortSelected = null;
+  };
+  drop.appendChild(clone);
+  sortSelected.classList.add('placed','selected-bank');
+  sortSelected.style.opacity = '0.4';
+  sortSelected.style.pointerEvents = 'none';
+  sortSelected = null;
+}
+function checkSort() {
+  let correct = 0, total = 0;
+  ['primary','secondary','tertiary'].forEach(cat => {
+    document.getElementById('drop-'+cat).querySelectorAll('.sort-chip').forEach(chip => {
+      total++;
+      if (chip.dataset.correct === cat) { chip.classList.add('correct-placed'); correct++; }
+      else { chip.classList.add('wrong-placed'); }
+    });
+  });
+  document.getElementById('sort-result').textContent = `Score: ${correct} / ${total}`;
+}
+initSort();
+
+/* ══════════════════════════ TRUE/FALSE ══════════════════════════ */
+function initTF() {
+  const container = document.getElementById('tf-questions');
+  container.innerHTML = '';
+  tfQuestions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'tf-q';
+    div.innerHTML = `<p><strong>${i+1}.</strong> ${q.s}</p>
+      <div class="tf-btns">
+        <button class="tf-btn" id="tf-t-${i}" onclick="selectTF(${i}, true)">✅ True</button>
+        <button class="tf-btn" id="tf-f-${i}" onclick="selectTF(${i}, false)">❌ False</button>
+      </div>
+      <div class="tf-result" id="tf-res-${i}"></div>`;
+    container.appendChild(div);
+  });
+  document.getElementById('tf-score').style.display = 'none';
+  document.getElementById('tf-prog').style.width = '0%';
+}
+const tfAnswers = {};
+function selectTF(i, val) {
+  tfAnswers[i] = val;
+  document.getElementById('tf-t-'+i).className = 'tf-btn' + (val ? ' selected-true' : '');
+  document.getElementById('tf-f-'+i).className = 'tf-btn' + (!val ? ' selected-false' : '');
+  const answered = Object.keys(tfAnswers).length;
+  document.getElementById('tf-prog').style.width = (answered / tfQuestions.length * 100) + '%';
+}
+function checkTF() {
+  let correct = 0;
+  tfQuestions.forEach((q, i) => {
+    const res = document.getElementById('tf-res-' + i);
+    if (tfAnswers[i] === undefined) { res.className = 'tf-result err'; res.textContent = `Not answered. Answer: ${q.correct ? 'TRUE' : 'FALSE'}`; return; }
+    if (tfAnswers[i] === q.correct) { res.className = 'tf-result ok'; res.textContent = '✓ Correct!'; correct++; }
+    else { res.className = 'tf-result err'; res.textContent = `✗ Incorrect. Answer: ${q.correct ? 'TRUE' : 'FALSE'}`; }
+  });
+  const score = document.getElementById('tf-score');
+  score.style.display = 'inline-block';
+  score.textContent = `Score: ${correct} / ${tfQuestions.length}`;
+}
+function resetTF() { Object.keys(tfAnswers).forEach(k => delete tfAnswers[k]); initTF(); }
+initTF();
+
+/* ══════════════════════════ GLOSSARY ══════════════════════════ */
+function renderGloss(items) {
+  const list = document.getElementById('gloss-list');
+  list.innerHTML = items.map(g =>
+    `<div class="gloss-item">
+      <div class="gloss-term">${g.term} <span class="gloss-topic ${g.tag}">${g.topic}</span></div>
+      <div class="gloss-def">${g.def}</div>
+    </div>`
+  ).join('');
+}
+function filterGloss(q) {
+  const lq = q.toLowerCase();
+  renderGloss(glossary.filter(g => g.term.toLowerCase().includes(lq) || g.def.toLowerCase().includes(lq) || g.topic.toLowerCase().includes(lq)));
+}
+renderGloss(glossary);
+</script>
+</body>
+</html>
